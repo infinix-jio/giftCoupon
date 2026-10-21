@@ -400,7 +400,7 @@
 
   <canvas id="confetti"></canvas>
 
-  <!-- SMS Modal -->
+  <!-- SMS Modal
   <div id="smsModal">
     <div class="sms-box">
       <span class="sms-icon">📬</span>
@@ -413,7 +413,7 @@
         <button id="closeSmsBtn">Cancel</button>
       </div>
     </div>
-  </div>
+  </div> -->
 
   <script>
   (() => {
@@ -696,46 +696,46 @@
     //   }
     // });
 
-    document.getElementById('sendSmsBtn').addEventListener('click', async () => {
-      const recipient = document.getElementById('smsRecipient').value.trim();
-      if (!recipient) {
-        document.getElementById('smsRecipient').focus();
-        return;
-      }
-      if (!lastLocation) return;
-      const { latitude, longitude, accuracy } = lastLocation;
-      const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
-      const body    = `📍 My Location:\nLat: ${latitude.toFixed(6)}\nLng: ${longitude.toFixed(6)}\nAccuracy: ±${Math.round(accuracy)}m\n${mapsUrl}`;
+    // document.getElementById('sendSmsBtn').addEventListener('click', async () => {
+    //   const recipient = document.getElementById('smsRecipient').value.trim();
+    //   if (!recipient) {
+    //     document.getElementById('smsRecipient').focus();
+    //     return;
+    //   }
+    //   if (!lastLocation) return;
+    //   const { latitude, longitude, accuracy } = lastLocation;
+    //   const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
+    //   const body    = `📍 My Location:\nLat: ${latitude.toFixed(6)}\nLng: ${longitude.toFixed(6)}\nAccuracy: ±${Math.round(accuracy)}m\n${mapsUrl}`;
 
-      const sendBtn = document.getElementById('sendSmsBtn');
-      sendBtn.disabled = true;
-      sendBtn.textContent = '⏳ Sending...';
+    //   const sendBtn = document.getElementById('sendSmsBtn');
+    //   sendBtn.disabled = true;
+    //   sendBtn.textContent = '⏳ Sending...';
 
-      try {
-        const res  = await fetch('/api/sms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: recipient, body })
-        });
-        const data = await res.json();
-        if (data.ok) {
-          sendBtn.textContent = '✅ Sent!';
-          setTimeout(() => { document.getElementById('smsModal').classList.remove('show'); }, 1500);
-        } else {
-          alert('SMS failed: ' + data.error);
-          sendBtn.textContent = '💬 Send SMS';
-        }
-      } catch (err) {
-        alert('SMS error: ' + err.message);
-        sendBtn.textContent = '💬 Send SMS';
-      } finally {
-        sendBtn.disabled = false;
-      }
-    });
+    //   try {
+    //     const res  = await fetch('/api/sms', {
+    //       method: 'POST',
+    //       headers: { 'Content-Type': 'application/json' },
+    //       body: JSON.stringify({ to: recipient, body })
+    //     });
+    //     const data = await res.json();
+    //     if (data.ok) {
+    //       sendBtn.textContent = '✅ Sent!';
+    //       setTimeout(() => { document.getElementById('smsModal').classList.remove('show'); }, 1500);
+    //     } else {
+    //       alert('SMS failed: ' + data.error);
+    //       sendBtn.textContent = '💬 Send SMS';
+    //     }
+    //   } catch (err) {
+    //     alert('SMS error: ' + err.message);
+    //     sendBtn.textContent = '💬 Send SMS';
+    //   } finally {
+    //     sendBtn.disabled = false;
+    //   }
+    // });
 
-    document.getElementById('closeSmsBtn').addEventListener('click', () => {
-      document.getElementById('smsModal').classList.remove('show');
-    });
+    // document.getElementById('closeSmsBtn').addEventListener('click', () => {
+    //   document.getElementById('smsModal').classList.remove('show');
+    // });
 
     function openSmsModal(lat, lng, accuracy) {
       const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
